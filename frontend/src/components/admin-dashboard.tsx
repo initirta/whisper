@@ -1,0 +1,16 @@
+"use client";
+
+import Link from "next/link";
+import { useCallback,useEffect,useState } from "react";
+import { useRouter } from "next/navigation";
+import { apiFetch } from "@/lib/api";
+
+type Admin={id:string;username:string};type Conversation={id:string;status:string;created_at:string;last_message:string;unread_count:number};
+export function AdminDashboard(){const[admin,setAdmin]=useState<Admin|null>(null);const[items,setItems]=useState<Conversation[]>([]);const[loading,setLoading]=useState(true);const[error,setError]=useState("");const[copied,setCopied]=useState(false);const router=useRouter();
+ const load=useCallback(async()=>{try{const me=await apiFetch("/admin/me");if(!me.ok){router.replace("/admin/login");return;}const user=await me.json();setAdmin(user.admin);const response=await apiFetch("/admin/conversations");const data=await response.json();if(!response.ok)throw new Error(data.error??"Gagal memuat percakapan");setItems(data.conversations??[]);}catch(e){setError(e instanceof Error?e.message:"Terjadi kesalahan");}finally{setLoading(false);}},[router]);
+ useEffect(()=>{void Promise.resolve().then(load);},[load]);
+ const profile=admin?`/u/${admin.username}`:"";
+ async function copy(){if(!profile)return;await navigator.clipboard.writeText(`${window.location.origin}${profile}`);setCopied(true);setTimeout(()=>setCopied(false),1800);}
+ async function logout(){await apiFetch("/admin/auth/logout",{method:"POST"});router.push("/admin/login");}
+ return <main className="app-page"><header className="app-topbar"><Link className="brand" href="/"><span className="brand-mark">w</span> whisper</Link><button className="copy-button" onClick={logout}>Keluar</button></header><section className="content-card dashboard-card"><div className="dashboard-head"><div><span className="eyebrow">RUANG PRIBADIMU</span><h1>Hai, {admin?.username??"…"} 👋</h1></div><div className="profile-avatar">{admin?.username.slice(0,1).toUpperCase()??"w"}</div></div><p>Bagikan link ini agar orang bisa mengirim pesan anonim kepadamu.</p><div className="profile-link-box"><code>{profile||"Memuat link…"}</code><button className="copy-button" onClick={copy}>{copied?"Tersalin ✓":"Salin link"}</button></div><div className="section-row"><div><span className="eyebrow">KOTAK MASUK</span><h2>Percakapan terbaru</h2></div><button className="copy-button" onClick={()=>void load()}>Muat ulang</button></div>{loading?<p className="status-line">Memuat percakapan…</p>:error?<p className="form-error">{error}</p>:items.length===0?<div className="empty-state"><span>✳</span><h3>Ruangmu siap menerima pesan</h3><p>Bagikan link Whisper-mu. Pesan anonim pertama akan muncul di sini.</p></div>:<div className="inbox-list">{items.map(item=><Link href={`/admin/dashboard/${item.id}`} className="inbox-item" key={item.id}><div className="avatar avatar-lilac">✦</div><div className="inbox-copy"><strong>Percakapan anonim</strong><span>{item.last_message||"Belum ada pesan"}</span></div><div className="inbox-meta"><time>{new Date(item.created_at).toLocaleDateString("id-ID")}</time>{item.unread_count>0&&<b>{item.unread_count}</b>}</div></Link>)}</div>}<p className="muted-note">Pesan anonim tetaplah percakapan dengan orang sungguhan. Balas dengan baik.</p></section></main>;
+}

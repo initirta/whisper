@@ -1,0 +1,20 @@
+# Local environment files
+.env
+.env.*
+!.env.example
+
+# Node.js / Next.js
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/coverage/
+
+# Go
+backend/bin/
+backend/coverage.out
+backend/*.test
+
+# Logs and OS/editor files
+*.log
+.DS_Store
+Thumbs.db
